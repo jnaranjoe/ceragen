@@ -1,0 +1,1 @@
+09:57:40 - ERR - ExecuteNonQuery - (SyntaxError('error de sintaxis en o cerca de «WHERE»\nLINE 6:                 WHERE rol_id = 1\n                        ^\n'),)
