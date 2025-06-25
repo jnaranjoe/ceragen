@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Optional, List
 from decimal import Decimal
-from .BaseModel import BaseModel
 from marshmallow import Schema, fields
 
 

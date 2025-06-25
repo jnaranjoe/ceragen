@@ -1,7 +1,7 @@
 from flask_restful import Resource
 
-from ..Model.Request.AdminModel import *
-from ..Components.AdminComponent import *
+from ..Model.Request.SecuModel import *
+from ..Components.SecuComponent import *
 from ...utils.general.logs import HandleLogs
 from ...utils.general.response import response_error, response_success, response_not_found, response_unauthorize
 # from ..Components.jwt_component import JwtComponent

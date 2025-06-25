@@ -1,4 +1,4 @@
-from ..Services.AdminService import *
+from ..Services.SecuService import *
 
 
 def load_routes(api):
