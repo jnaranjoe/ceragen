@@ -441,3 +441,93 @@ class UserComponent:
 #====================================================================
 # User_Rol  
 #====================================================================
+class UserRolComponent:
+    @staticmethod
+    def getAll():
+        try:
+            result = False
+            data = None
+            message = None
+
+            sql = """
+                SELECT sur.id_user_rol, concat(ap.per_names, ' ', ap.per_surnames) as nombre, sur.id_user, sur.id_rol, sr.rol_name, sur.state
+                FROM ceragen.segu_user_rol sur
+                left join ceragen.segu_user su on sur.id_user = su.user_id
+                left join ceragen.admin_person ap on su.user_person_id = ap.per_id
+                left join ceragen.segu_rol sr on sur.id_rol = sr.rol_id;
+            """
+
+            resultado = DataBaseHandle.getRecords(sql,0)
+            print("Resultado de la consulta: ", resultado['data'])
+            if resultado['result']:
+                result = True
+                data = resultado['data']
+            else:
+                message = 'Error al Obtener datos -> ' + resultado['message']
+        except Exception as err:
+            message = err.__str__()
+            HandleLogs.write_error(message)
+        finally:
+            return internal_response(result, data, message)
+    
+    @staticmethod
+    def create(datos):
+        result = False
+        data = None
+        message = None
+        try:
+            sql = """
+                INSERT INTO ceragen.segu_user_rol (id_user,
+                id_rol)
+                VALUES (%s,%s)
+            """
+            # print("Datos a insertar: ", datos)
+            record = (
+                datos['id_user'],
+                datos['id_rol'],
+            )
+
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql,record)
+            if data is None:
+                if data_NonQuery['result']:
+                    data = data_NonQuery['data']
+                    result = True
+                else:
+                    message = "Error al crear" + data_NonQuery['message']
+            else:
+                message="error al ejecutar sql para crear"
+                HandleLogs.write_error(message)
+                
+        except Exception as err:
+            message = "Error al crear" + err.__str__()
+            HandleLogs.write_error(message)
+
+        finally:
+            return internal_response(result, data, message)
+        
+    @staticmethod
+    def logicDelete(datos):
+        result = False
+        data = None
+        message = None
+        try:
+            sql = """
+                UPDATE ceragen.segu_user_rol SET
+                    state = %s
+                WHERE id_user_rol = %s
+            """
+            record = (
+                datos['state'],
+                datos['id_user_rol']
+            )
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result = True
+                data = data_NonQuery['data']
+            else:
+                message = "Error al eliminar: " + data_NonQuery['message']
+        except Exception as err:
+            message = "Error al eliminar: " + err.__str__()
+            HandleLogs.write_error(message)
+        finally:
+            return internal_response(result, data, message)

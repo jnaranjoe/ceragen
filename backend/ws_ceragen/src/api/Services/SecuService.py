@@ -438,3 +438,92 @@ class UserLogicDelete(Resource):
 #====================================================================
 # User_Rol  
 #====================================================================
+class UserRolGet(Resource):
+    @staticmethod
+    def get():
+        try:
+            HandleLogs.write_log("Ejecutando servicio de Listar")
+            # #Validar que el token sea correcto
+            # token = request.headers['tokenapp']
+            # if not JwtComponent.token_validate(token):
+            #     return response_unauthorize()
+
+            resultado = UserRolComponent.getAll()
+            # print("Resultado de la consulta: ", resultado)
+            if resultado['result']:
+                if resultado['data'].__len__() > 0:
+                    return response_success(resultado['data'])
+                else:
+                    return response_not_found()
+            else:
+                return response_error(resultado['message'])
+            # return response_success(resultado['data'])
+
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error("Error en el método: " + err.__str__())
+        
+class UserRolCreate(Resource):
+    @staticmethod
+    def post():
+        try:
+            HandleLogs.write_log("Ejecutando servicio de Crear")
+            # Obtener el request
+            rq_json = request.get_json()
+
+            print("Datos del request: ", rq_json)
+            # Validar ese request sea compatible con el modelo
+            new_request = UserRolReq() 
+            error_en_validacion = new_request.validate(rq_json)
+            if error_en_validacion:
+                message = "Error al validar el request -> " + str(error_en_validacion)
+                HandleLogs.write_error(message)
+                return response_error(message)
+            
+            payload = {
+                'id_user':rq_json['id_user'],
+                'id_rol':rq_json['id_rol'],
+            }
+            resultado = UserRolComponent.create(payload)
+
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error("Error en el método: " + err.__str__())
+
+class UserRolLogicDelete(Resource):
+    @staticmethod
+    def put():
+        try:
+            HandleLogs.write_log("Ejecutando servicio de Eliminar Lógicamente")
+            # Obtener el request
+            rq_json = request.get_json()
+
+            print("Datos del request: ", rq_json)
+            # Validar ese request sea compatible con el modelo
+            new_request = UserRolDeleteReq()
+            error_en_validacion = new_request.validate(rq_json)
+
+            if error_en_validacion:
+                message = "Error al validar el request -> " + str(error_en_validacion)
+                HandleLogs.write_error(message)
+                return response_error(message)
+            
+            payload = {
+                'id_user_rol':rq_json['id_user_rol'],
+                'state':rq_json['state'],
+            }
+            resultado = UserRolComponent.logicDelete(payload)
+
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error("Error en el método: " + err.__str__())

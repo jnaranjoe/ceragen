@@ -79,4 +79,13 @@ class UserDeleteReq(Schema):
 #====================================================================
 # User_Rol  
 #====================================================================
-
+class UserRolReq(Schema):
+    id_user = fields.Integer(required=True)
+    id_rol = fields.Integer(required=True)
+class UserRolIdReq(Schema):
+    id_user_rol = fields.Integer(required=True)
+    id_user = fields.Integer(required=True)
+    id_rol = fields.Integer(required=True)
+class UserRolDeleteReq(Schema):
+    id_user_rol = fields.Integer(required=True)
+    state = fields.Boolean(required=True)
