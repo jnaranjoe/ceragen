@@ -32,5 +32,17 @@ def load_routes(api):
     #metodo para actualizar
     api.add_resource(RolUpdate, '/security/Rol/update')
     #metodo para Eliminar Logicamente
-    # api.add_resource(PersonLogicDelete, '/security/Person/delete')
+    api.add_resource(RolLogicDelete, '/security/Rol/delete')
+    
+    #===================================================================
+    #User
+    #===================================================================
+    #metodo para listar
+    api.add_resource(UserGet, '/security/User/list')
+    #metodo para crear
+    api.add_resource(UserCreate, '/security/User/create')
+    #metodo para actualizar
+    # api.add_resource(RolUpdate, '/security/Rol/update')
+    #metodo para Eliminar Logicamente
+    # api.add_resource(RolLogicDelete, '/security/Rol/delete')
     

@@ -1,1 +1,2 @@
 09:57:40 - ERR - ExecuteNonQuery - (SyntaxError('error de sintaxis en o cerca de «WHERE»\nLINE 6:                 WHERE rol_id = 1\n                        ^\n'),)
+13:32:46 - ERR - put - ("Error al validar el request -> {'rol_state': ['Missing data for required field.'], 'rol_id': ['Missing data for required field.'], 'per_state': ['Unknown field.'], 'per_id': ['Unknown field.']}",)
