@@ -438,6 +438,109 @@ class UserComponent:
         finally:
             return internal_response(result, data, message)
 
+    @staticmethod
+    def login(email, password):
+        result = False
+        data = None
+        message = None
+        try:
+            # 1. Buscar al usuario por su correo electrónico
+            sql = """
+                SELECT user_id, user_person_id, user_mail, user_password, user_locked, user_state
+                FROM ceragen.segu_user 
+                WHERE user_mail = %s
+            """
+            record = (email,)
+            user_data_result = DataBaseHandle.getRecords(sql, 1, record)
+
+            if not user_data_result['result'] or not user_data_result['data']:
+                message = "Usuario o contraseña incorrectos."
+                return internal_response(result, data, message)
+
+            user = user_data_result['data']
+
+            if user['user_password'] == password:
+                # 3. Verificar si la cuenta está activa y no bloqueada
+                if not user['user_state']:
+                    message = "La cuenta de usuario está inactiva."
+                elif user['user_locked']:
+                    message = "La cuenta de usuario está bloqueada."
+                else:
+                    # Si todo está bien, preparamos los datos del usuario para devolverlos
+                    result = True
+                    data = {
+                        "user_id": user['user_id'],
+                        "user_person_id": user['user_person_id'],
+                        "user_mail": user['user_mail']
+                    }
+                    message = "Login exitoso."
+            else:
+                message = "Usuario o contraseña incorrectos."
+
+        except Exception as err:
+            message = "Error en el proceso de login: " + err.__str__()
+            HandleLogs.write_error(message)
+        finally:
+            return internal_response(result, data, message)
+
+    @staticmethod
+    def getUserByEmail(email):
+        try:
+            result = False
+            data = None
+            message = None
+            sql = """
+                SELECT su.user_id, su.user_mail, concat(ap.per_names, ' ', ap.per_surnames) as nombre
+                FROM ceragen.segu_user su
+                LEFT JOIN ceragen.admin_person ap ON su.user_person_id = ap.per_id
+                WHERE su.user_mail = %s
+            """
+            record = (email,)
+            
+            # Usamos el método getRecords con tamaño 1 para obtener solo un registro
+            resultado = DataBaseHandle.getRecords(sql, 1, record)
+            
+            if resultado['result']:
+                result = True
+                data = resultado['data']
+            else:
+                message = 'Error al obtener datos del usuario -> ' + resultado['message']
+        except Exception as err:
+            HandleLogs.write_error(err)
+            message = err.__str__()
+        finally:
+            return internal_response(result, data, message)
+
+    @staticmethod
+    def UsePasswordUpdateMail(new_password, mail_user):
+        result = False
+        data = None
+        message = None
+        try:
+            
+            sql = """
+                UPDATE ceragen.segu_user SET
+                    user_password = %s
+                WHERE user_mail = %s
+            """
+            record = (new_password, mail_user)
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            
+            if data_NonQuery['result']:
+                result = True
+                data = {"updated_user_with_mail": mail_user}
+                message = "Contraseña actualizada correctamente."
+            else:
+                # Esto podría ocurrir si el email no se encuentra, aunque el token sea válido.
+                message = "Error al ejecutar la actualización en la base de datos: " + data_NonQuery['message']
+                result = False
+
+        except Exception as err:
+            message = "Error en el proceso de actualización: " + err.__str__()
+            HandleLogs.write_error(message)
+        finally:
+            return internal_response(result, data, message)
+
 #====================================================================
 # User_Rol  
 #====================================================================
@@ -531,3 +634,5 @@ class UserRolComponent:
             HandleLogs.write_error(message)
         finally:
             return internal_response(result, data, message)
+        
+    

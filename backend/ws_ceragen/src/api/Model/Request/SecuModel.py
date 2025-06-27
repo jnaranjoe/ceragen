@@ -89,3 +89,10 @@ class UserRolIdReq(Schema):
 class UserRolDeleteReq(Schema):
     id_user_rol = fields.Integer(required=True)
     state = fields.Boolean(required=True)
+
+class SendEmailPasswordReq(Schema):
+    user_mail = fields.String(required=True)
+
+class UpdatePasswordSchema(Schema):
+    new_password = fields.String(required=True)
+    token_temp = fields.String(required=True)

@@ -1,9 +1,8 @@
 from ..Services.SecuService import *
 
-
 def load_routes(api):
     #metodo para el login
-    # api.add_resource(LoginService, '/security/login')
+    api.add_resource(LoginService, '/security/login')
     
     
     #metodo para listar los generos de las personas
@@ -58,3 +57,7 @@ def load_routes(api):
     #metodo para Eliminar Logicamente
     api.add_resource(UserRolLogicDelete, '/security/UserRol/delete')
     
+    #metodo para recuperacion de contraseña
+    api.add_resource(PasswordRecovery, '/security/recover-password')
+    # Metodo para actualizar la contraseña desde el correo
+    api.add_resource(EmailPasswordUpdate, '/security/change-password')

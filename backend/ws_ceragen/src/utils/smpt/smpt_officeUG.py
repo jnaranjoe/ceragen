@@ -5,7 +5,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from ..general.logs import HandleLogs
-from ...api.Components.Security.TokenComponent import TokenComponent
+from ...api.Components.TokenComponent import TokenComponent
 from ..general.config import Config_SMPT
 
 
@@ -22,6 +22,9 @@ def send_password_recovery_email(destinatario):
         data = None
         token_temp = TokenComponent.Token_Generate_ResetPassword(destinatario)
         token = base64.urlsafe_b64encode(token_temp.encode()).decode()
+
+        print(f"--- TOKEN DE PRUEBA ---: {token}")
+
         reset_password_url = f"{Config_SMPT.url}{Config_SMPT.ruta}/{token}"
         content_mail = get_email_template(reset_password_url )
         msg = MIMEMultipart()

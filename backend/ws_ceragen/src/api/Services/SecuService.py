@@ -5,6 +5,8 @@ from ..Components.SecuComponent import *
 from ...utils.general.logs import HandleLogs
 from ...utils.general.response import response_error, response_success, response_not_found, response_unauthorize
 # from ..Components.jwt_component import JwtComponent
+from ...utils.smpt.smpt_officeUG import send_password_recovery_email
+from ..Components.TokenComponent import TokenComponent
 from flask import request
 
 class PersonGenre(Resource):
@@ -527,3 +529,102 @@ class UserRolLogicDelete(Resource):
         except Exception as err:
             HandleLogs.write_error(err)
             return response_error("Error en el método: " + err.__str__())
+        
+class LoginService(Resource):
+    @staticmethod
+    def post():
+        try:
+            HandleLogs.write_log("Iniciando servicio de Login")
+            rq_json = request.get_json()
+
+            # Validar el request
+            new_request = LoginRequest()
+            error = new_request.validate(rq_json)
+            if error:
+                return response_error("Error al Validar el Request -> " + str(error))
+
+            # Verificar credenciales usando el componente
+            login_result = UserComponent.login(rq_json['login_user'], rq_json['login_password'])
+
+            if not login_result['result']:
+                # Si el login falla (contraseña incorrecta, usuario inactivo, etc.)
+                return response_unauthorize()
+
+            # Si el login es exitoso, generar el token
+            user_info = login_result['data']
+            token = TokenComponent.Token_Generate(user_info) # Generamos el token con la info del usuario
+            
+            # Devolver el token y los datos del usuario
+            return response_success({
+                "token": token,
+                "user": user_info
+            })
+
+        except Exception as err:
+            error_msg = f"Error inesperado en el servicio de Login: {err.__str__()}"
+            HandleLogs.write_error(error_msg)
+            return response_error(error_msg)
+
+class PasswordRecovery(Resource):
+    @staticmethod
+    def patch():
+        try:
+            HandleLogs.write_log("Ejecutando servicio de Recuperación de Contraseña")
+            rq_json = request.get_json() 
+
+            # Validar la solicitud utilizando el esquema
+            new_request = SendEmailPasswordReq()
+            error_en_validacion = new_request.validate(rq_json)
+            if error_en_validacion:
+                message = "Error al validar el request -> " + str(error_en_validacion)
+                HandleLogs.write_error(message)
+                return response_error(message)
+
+            user_mail = rq_json['user_mail']
+            resultado = send_password_recovery_email(user_mail)
+
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error("Error en el método: " + err.__str__())
+        
+class EmailPasswordUpdate(Resource):
+    @staticmethod
+    def patch():
+        try:
+            HandleLogs.write_log("Iniciando servicio: Actualizar Password Por Email")
+            rq_json = request.get_json()
+
+            # Validar el request (ahora sin user_id)
+            new_request = UpdatePasswordSchema()
+            error = new_request.validate(rq_json)
+            if error:
+                error_message = "Error al Validar el Request -> " + str(error)
+                HandleLogs.write_error(error_message)
+                return response_error(error_message)
+            
+            # Validar el token y obtener el correo electrónico
+            mail_user = TokenComponent.Token_Validate_ResetPassword(rq_json["token_temp"])
+            if mail_user is None:
+                return response_error("Error: Token inválido o expirado.")
+
+            # Llamar al componente para actualizar la contraseña (ahora sin user_id)
+            answer = UserComponent.UsePasswordUpdateMail(
+                rq_json["new_password"],
+                mail_user
+            )
+            
+            if answer['result']:
+                return response_success(answer['message'])
+            else:
+                return response_error(answer['message'])
+
+        except Exception as err:
+            error_msg = f"Error inesperado en el servicio: {err.__str__()}"
+            HandleLogs.write_error(error_msg)
+            return response_error(error_msg)
+        
