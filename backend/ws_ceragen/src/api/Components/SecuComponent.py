@@ -1,6 +1,7 @@
 from ...utils.database.connection_db import DataBaseHandle
 from ...utils.general.logs import HandleLogs
 from ...utils.general.response import internal_response
+from decimal import Decimal
 
 
 class PersonGenreComponent:
@@ -311,7 +312,7 @@ class RolComponent:
             return internal_response(result, data, message)
 
 #====================================================================
-#ROL
+#User
 #====================================================================
 
 class UserComponent:
@@ -636,3 +637,750 @@ class UserRolComponent:
             return internal_response(result, data, message)
         
     
+#=====================================================================
+#Componente custom 1
+#=====================================================================
+class Custom1Component:
+    @staticmethod
+    def getAll():
+        try:
+            result = False
+            data = None
+            message = None
+
+            sql = """
+                SELECT sur.id_user_rol, concat(ap.per_names, ' ', ap.per_surnames) as nombre, sur.id_user, sur.id_rol, sr.rol_name, sur.state
+                FROM ceragen.segu_user_rol sur
+                left join ceragen.segu_user su on sur.id_user = su.user_id
+                left join ceragen.admin_person ap on su.user_person_id = ap.per_id
+                left join ceragen.segu_rol sr on sur.id_rol = sr.rol_id;
+            """
+
+            resultado = DataBaseHandle.getRecords(sql,0)
+            print("Resultado de la consulta: ", resultado['data'])
+            if resultado['result']:
+                result = True
+                data = resultado['data']
+            else:
+                message = 'Error al Obtener datos -> ' + resultado['message']
+        except Exception as err:
+            message = err.__str__()
+            HandleLogs.write_error(message)
+        finally:
+            return internal_response(result, data, message)
+    
+    @staticmethod
+    def create(datos):
+        result = False
+        data = None
+        message = None
+        perId = None
+        try:
+            sql = """
+                INSERT INTO ceragen.admin_person (per_identification,
+                per_names,
+                per_surnames,
+                per_genre_id,
+                per_marital_status_id,
+                per_country,
+                per_city,
+                per_address,
+                per_phone,
+                per_mail,
+                per_birth_date)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            """
+            # print("Datos a insertar: ", datos)
+            record = (
+                datos['per_identification'],
+                datos['per_names'],
+                datos['per_surnames'],
+                datos['per_genre_id'],
+                datos['per_marital_status_id'],
+                datos['per_country'],
+                datos['per_city'],
+                datos['per_address'],
+                datos['per_phone'],
+                datos['per_mail'],
+                datos['per_birth_date'],
+            )
+            # Ejecutar la inserción en la tabla admin_person
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql,record)
+            if data is None:
+                if data_NonQuery['result']:
+                    data = data_NonQuery['data']
+                    perId = {
+                        "id_user": data_NonQuery['data']
+                    }
+                    result = True
+                else:
+                    message = "Error al crear persona" + data_NonQuery['message']
+            else:
+                message="error al ejecutar sql para crear"
+                HandleLogs.write_error(message)
+            
+            print("ID de la persona recién insertada: ", perId)
+            #Validar el tipo de rol y ver si es necesario insertar en otra tabla
+            if datos['id_rol'] == 1:
+                print("Es admin")  # Supongamos que el rol con id 1 es el rol de administrador
+            elif datos['id_rol'] == 2:
+                print("Es Secretario")
+            elif datos['id_rol'] == 3:
+                print("Es Medico")
+                
+                sql = """
+                INSERT INTO ceragen.admin_medical_staff (med_person_id)
+                VALUES (%s)
+                """
+                # print("Datos a insertar: ", datos)
+                record = (
+                    perId['id_user'],  # Asumiendo que el ID de la persona recién insertada es per_id
+                )
+                data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql,record)
+            elif datos['id_rol'] == 4:
+                print("Es cliente")
+
+                sql = """
+                INSERT INTO ceragen.admin_client (cli_person_id)
+                VALUES (%s)
+                """
+                # print("Datos a insertar: ", datos)
+                record = (
+                    perId['id_user'],  # Asumiendo que el ID de la persona recién insertada es per_id
+                )
+                data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql,record)
+            elif datos['id_rol'] == 5:
+                print("Es paciente")
+                
+                sql = """
+                INSERT INTO ceragen.admin_patient (pat_person_id)
+                VALUES (%s)
+                """
+                # print("Datos a insertar: ", datos)
+                record = (
+                    perId['id_user'],  # Asumiendo que el ID de la persona recién insertada es per_id
+                )
+                data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql,record)
+
+            if data_NonQuery['result']:
+                    data = data_NonQuery['data']
+                    result = True
+            else:
+                message = "Error al asignar a otras tablas" + data_NonQuery['message']
+            #Insertar en tabla user
+            sql = """
+                INSERT INTO ceragen.segu_user (user_person_id,
+                user_mail,
+                user_password)
+                VALUES (%s,%s,%s)
+            """
+            record = (
+                perId['id_user'],
+                datos['per_mail'],
+                datos['per_identification']
+            )
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql,record)
+            if data_NonQuery['result']:
+                    data = data_NonQuery['data']
+                    userId = {
+                        "id_user": data_NonQuery['data']
+                    }
+                    result = True
+            else:
+                message = "Error al asignar a otras tablas" + data_NonQuery['message']
+            # Ahora, insertar en la tabla segu_user_rol
+
+            sql = """
+                INSERT INTO ceragen.segu_user_rol (id_user,
+                id_rol)
+                VALUES (%s,%s)
+            """
+            # print("Datos a insertar: ", datos)
+            record = (
+                userId['id_user'],
+                datos['id_rol'],
+            )
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql,record)
+            if data_NonQuery['result']:
+                    data = data_NonQuery['data']
+                    result = True
+            else:
+                message = "Error al asignar a otras tablas" + data_NonQuery['message']
+
+        except Exception as err:
+            message = "Error al crear" + err.__str__()
+            HandleLogs.write_error(message)
+
+        finally:
+            return internal_response(result, data, message)
+
+#=====================================================================
+#Tabla tipo personal medico
+#=====================================================================
+class MedicPersonTypeComponent:
+    @staticmethod
+    def getAll():
+        result, data, message = False, None, None
+        try:
+            sql = """
+                SELECT mpt_id, mpt_name, mpt_description, mpt_state
+                FROM ceragen.admin_medic_person_type
+            """
+            resultado = DataBaseHandle.getRecords(sql, 0)
+            if resultado['result']:
+                result, data = True, resultado['data']
+            else:
+                message = 'Error al obtener tipos de médicos -> ' + resultado['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def create(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                INSERT INTO ceragen.admin_medic_person_type
+                (mpt_name, mpt_description)
+                VALUES (%s, %s)
+            """
+            record = (datos['mpt_name'], datos['mpt_description'])
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al crear tipo médico: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def update(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                UPDATE ceragen.admin_medic_person_type SET
+                mpt_name = %s,
+                mpt_description = %s,
+                WHERE mpt_id = %s
+            """
+            record = (datos['mpt_name'], datos['mpt_description'], datos['mpt_id'])
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al actualizar tipo médico: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def logicDelete(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                UPDATE ceragen.admin_medic_person_type SET mpt_state = %s WHERE mpt_id = %s
+            """
+            record = (datos['mpt_state'], datos['mpt_id'])
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al eliminar tipo médico: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message) 
+#=====================================================================
+#Tabla personal medico
+#=====================================================================
+class MedicalStaffComponent:
+    @staticmethod
+    def getAll():
+        result, data, message = False, None, None
+        try:
+            sql = """
+                SELECT med_id, med_person_id, concat(ap.per_names, ' ', ap.per_surnames) as nombreMedico, med_type_id, ampt.mpt_name, med_specialty, med_state
+                FROM ceragen.admin_medical_staff ams
+				left join ceragen.admin_person ap on ams.med_person_id = ap.per_id
+				left join ceragen.admin_medic_person_type ampt on ams.med_type_id = ampt.mpt_id
+            """
+            resultado = DataBaseHandle.getRecords(sql, 0)
+            if resultado['result']:
+                result, data = True, resultado['data']
+            else:
+                message = 'Error al obtener personal médico -> ' + resultado['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def create(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                INSERT INTO ceragen.admin_medical_staff
+                (med_person_id, med_type_id, med_specialty)
+                VALUES (%s, %s, %s)
+            """
+            record = (
+                datos['med_person_id'],
+                datos['med_type_id'],
+                datos['med_specialty'],
+                datos['med_state']
+            )
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al crear personal médico: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def update(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                UPDATE ceragen.admin_medical_staff SET
+                med_type_id = %s,
+                med_specialty = %s
+                WHERE med_id = %s
+            """
+            record = (
+                datos['med_type_id'],
+                datos['med_specialty'],
+                datos['med_id']
+            )
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al actualizar personal médico: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def logicDelete(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                UPDATE ceragen.admin_medical_staff SET med_state = %s WHERE med_id = %s
+            """
+            record = (datos['med_state'], datos['med_id'])
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al eliminar personal médico: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+#=====================================================================
+#Tabla paciente
+#=====================================================================
+class PatientComponent:
+    @staticmethod
+    def getAll():
+        result, data, message = False, None, None
+        try:
+            sql = """
+                SELECT pat_id, pat_person_id, pat_medical_conditions, pat_allergies,
+                       pat_blood_type, pat_emergency_contact_name,
+                       pat_emergency_contact_phone, pat_state
+                FROM ceragen.admin_patient
+            """
+            resultado = DataBaseHandle.getRecords(sql, 0)
+            if resultado['result']:
+                result, data = True, resultado['data']
+            else:
+                message = 'Error al obtener pacientes -> ' + resultado['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def create(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                INSERT INTO ceragen.admin_patient
+                (pat_person_id, pat_medical_conditions, pat_allergies,
+                 pat_blood_type, pat_emergency_contact_name,
+                 pat_emergency_contact_phone, pat_state)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            record = (
+                datos['pat_person_id'],
+                datos['pat_medical_conditions'],
+                datos['pat_allergies'],
+                datos['pat_blood_type'],
+                datos['pat_emergency_contact_name'],
+                datos['pat_emergency_contact_phone'],
+                datos['pat_state']
+            )
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al crear paciente: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def update(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                UPDATE ceragen.admin_patient SET
+                pat_medical_conditions = %s,
+                pat_allergies = %s,
+                pat_blood_type = %s,
+                pat_emergency_contact_name = %s,
+                pat_emergency_contact_phone = %s
+                WHERE pat_id = %s
+            """
+            record = (
+                datos['pat_medical_conditions'],
+                datos['pat_allergies'],
+                datos['pat_blood_type'],
+                datos['pat_emergency_contact_name'],
+                datos['pat_emergency_contact_phone'],
+                datos['pat_id']
+            )
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al actualizar paciente: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def logicDelete(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                UPDATE ceragen.admin_patient SET pat_state = %s WHERE pat_id = %s
+            """
+            record = (datos['pat_state'], datos['pat_id'])
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al eliminar paciente: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+#=====================================================================
+#Tabla Historial Medico
+#=====================================================================
+class MedicalHistoryComponent:
+    @staticmethod
+    def getAll():
+        result, data, message = False, None, None
+        try:
+            sql = """
+                SELECT hist_id, hist_patient_id, hist_primary_complaint,
+                       hist_related_trauma, hist_current_treatment, hist_notes
+                FROM ceragen.clinic_patient_medical_history
+            """
+            resultado = DataBaseHandle.getRecords(sql, 0)
+            if resultado['result']:
+                result, data = True, resultado['data']
+            else:
+                message = 'Error al obtener historiales médicos -> ' + resultado['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def create(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                INSERT INTO ceragen.clinic_patient_medical_history
+                (hist_patient_id, hist_primary_complaint,
+                 hist_related_trauma, hist_current_treatment, hist_notes)
+                VALUES (%s, %s, %s, %s, %s)
+            """
+            record = (
+                datos['hist_patient_id'],
+                datos['hist_primary_complaint'],
+                datos['hist_related_trauma'],
+                datos['hist_current_treatment'],
+                datos['hist_notes']
+            )
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al crear historial médico: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def update(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                UPDATE ceragen.clinic_patient_medical_history SET
+                hist_patient_id = %s,
+                hist_primary_complaint = %s,
+                hist_related_trauma = %s,
+                hist_current_treatment = %s,
+                hist_notes = %s
+                WHERE hist_id = %s
+            """
+            record = (
+                datos['hist_patient_id'],
+                datos['hist_primary_complaint'],
+                datos['hist_related_trauma'],
+                datos['hist_current_treatment'],
+                datos['hist_notes'],
+                datos['hist_id']
+            )
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al actualizar historial médico: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+    
+    @staticmethod
+    def delete(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                Delete from ceragen.clinic_patient_medical_history
+                WHERE hist_id = %s
+            """
+            record = (
+                datos['hist_id']
+            )
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al actualizar historial médico: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+#=====================================================================
+#Tabla Producto
+#=====================================================================
+
+class ProductComponent:
+    @staticmethod
+    def getAll():
+        result, data, message = False, None, None
+        try:
+            sql = """
+                SELECT pro_id, pro_name, pro_description, pro_price,
+                       pro_total_sessions,
+                       pro_therapy_type_id, pro_state
+                FROM ceragen.admin_product
+            """
+            resultado = DataBaseHandle.getRecords(sql, 0)
+            # Convierte todos los Decimals a float en una lista de diccionarios
+            if resultado['result']:
+                for prod in resultado['data']:
+                    if isinstance(prod.get('pro_price'), Decimal):
+                        prod['pro_price'] = float(prod['pro_price'])
+                result, data = True, resultado['data']
+            else:
+                message = 'Error al obtener productos -> ' + resultado['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def create(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                INSERT INTO ceragen.admin_product
+                (pro_name, pro_description, pro_price,
+                 pro_total_sessions,
+                 pro_therapy_type_id)
+                VALUES (%s, %s, %s, %s, %s)
+            """
+            record = (
+                datos['pro_name'],
+                datos['pro_description'],
+                datos['pro_price'],
+                datos['pro_total_sessions'],
+                datos['pro_therapy_type_id'],
+            )
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al crear producto: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def update(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                UPDATE ceragen.admin_product SET
+                pro_name = %s,
+                pro_description = %s,
+                pro_price = %s,
+                pro_total_sessions = %s,
+                pro_therapy_type_id = %s,
+                WHERE pro_id = %s
+            """
+            record = (
+                datos['pro_name'],
+                datos['pro_description'],
+                datos['pro_price'],
+                datos['pro_total_sessions'],
+                datos['pro_therapy_type_id'],
+                datos['pro_id']
+            )
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al actualizar producto: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def logicDelete(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                UPDATE ceragen.admin_product SET pro_state = %s WHERE pro_id = %s
+            """
+            record = (datos['pro_state'], datos['pro_id'])
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al eliminar producto: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+#=====================================================================
+#Tabla TherapyType
+#=====================================================================
+class TherapyTypeComponent:
+    @staticmethod
+    def getAll():
+        result, data, message = False, None, None
+        try:
+            sql = """
+                SELECT tht_id, tht_name, tht_description, tht_state
+                FROM ceragen.admin_therapy_type
+            """
+            resultado = DataBaseHandle.getRecords(sql, 0)
+            if resultado['result']:
+                result, data = True, resultado['data']
+            else:
+                message = 'Error al obtener tipos de terapia -> ' + resultado['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def create(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                INSERT INTO ceragen.admin_therapy_type
+                (tht_name, tht_description)
+                VALUES (%s, %s)
+            """
+            record = (
+                datos['tht_name'],
+                datos['tht_description'],
+            )
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al crear tipo de terapia: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def update(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                UPDATE ceragen.admin_therapy_type SET
+                tht_name = %s,
+                tht_description = %s,
+                WHERE tht_id = %s
+            """
+            record = (
+                datos['tht_name'],
+                datos['tht_description'],
+                datos['tht_id']
+            )
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al actualizar tipo de terapia: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
+
+    @staticmethod
+    def logicDelete(datos):
+        result, data, message = False, None, None
+        try:
+            sql = """
+                UPDATE ceragen.admin_therapy_type SET tht_state = %s WHERE tht_id = %s
+            """
+            record = (datos['tht_state'], datos['tht_id'])
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result, data = True, data_NonQuery['data']
+            else:
+                message = "Error al eliminar tipo de terapia: " + data_NonQuery['message']
+        except Exception as err:
+            message = str(err)
+            HandleLogs.write_error(message)
+        return internal_response(result, data, message)
