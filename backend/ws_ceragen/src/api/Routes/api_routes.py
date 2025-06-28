@@ -44,6 +44,10 @@ def load_routes(api):
     api.add_resource(UserUpdate, '/security/User/update')
     #metodo para Eliminar Logicamente
     api.add_resource(UserLogicDelete, '/security/User/delete')
+    #metodo para recuperacion de contraseña
+    api.add_resource(PasswordRecovery, '/security/recover-password')
+    # Metodo para actualizar la contraseña desde el correo
+    api.add_resource(EmailPasswordUpdate, '/security/change-password')
 
     #===================================================================
     #User_Rol
@@ -57,7 +61,80 @@ def load_routes(api):
     #metodo para Eliminar Logicamente
     api.add_resource(UserRolLogicDelete, '/security/UserRol/delete')
     
-    #metodo para recuperacion de contraseña
-    api.add_resource(PasswordRecovery, '/security/recover-password')
-    # Metodo para actualizar la contraseña desde el correo
-    api.add_resource(EmailPasswordUpdate, '/security/change-password')
+    #===================================================================
+    #Custom
+    #===================================================================
+    #metodo para crear Persona, User, Rol y su tabla de (paciente, cliente, medico)
+    api.add_resource(Custom1Create, '/security/custom1/create')
+
+    #=====================================================================
+    #Tabla tipo personal medico
+    #=====================================================================
+    #metodo para listar
+    api.add_resource(TypeMedicGet, '/security/TypeMedic/list')
+    #metodo para crear
+    api.add_resource(TypeMedicCreate, '/security/TypeMedic/create')
+    #metodo para actualizar
+    api.add_resource(TypeMedicUpdate, '/security/TypeMedic/update')
+    #metodo para Eliminar Logicamente
+    api.add_resource(TypeMedicLogicDelete, '/security/TypeMedic/delete')
+    
+    #=====================================================================
+    #Tabla personal medico
+    #=====================================================================
+    #metodo para listar
+    api.add_resource(MedicGet, '/security/Medic/list')
+    #metodo para crear
+    # api.add_resource(MedicCreate, '/security/Medic/create')
+    #metodo para actualizar
+    api.add_resource(MedicUpdate, '/security/Medic/update')
+    #metodo para Eliminar Logicamente
+    api.add_resource(MedicLogicDelete, '/security/Medic/delete')
+
+    #=====================================================================
+    #Tabla paciente
+    #=====================================================================
+    #metodo para listar
+    api.add_resource(PatientGet, '/security/Patient/list')
+    #metodo para crear
+    # api.add_resource(PatientCreate, '/security/Patient/create')
+    #metodo para actualizar
+    api.add_resource(PatientUpdate, '/security/Patient/update')
+    #metodo para Eliminar Logicamente
+    api.add_resource(PatientLogicDelete, '/security/Patient/delete')
+    
+    #=====================================================================
+    #Tabla Historial Medico
+    #=====================================================================
+    #metodo para listar
+    api.add_resource(MedHistoryGet, '/security/MedHistory/list')
+    #metodo para crear
+    api.add_resource(MedHistoryCreate, '/security/MedHistory/create')
+    #metodo para actualizar
+    api.add_resource(MedHistoryUpdate, '/security/MedHistory/update')
+    #metodo para Eliminar Logicamente
+    api.add_resource(MedHistoryDelete, '/security/MedHistory/delete')
+    
+    #=====================================================================
+    #Tabla Producto
+    #=====================================================================
+    #metodo para listar
+    api.add_resource(ProductGet, '/security/Product/list')
+    #metodo para crear
+    api.add_resource(ProductCreate, '/security/Product/create')
+    #metodo para actualizar
+    api.add_resource(ProductUpdate, '/security/Product/update')
+    #metodo para Eliminar Logicamente
+    api.add_resource(ProductDelete, '/security/Product/delete')
+
+    #=====================================================================
+    #Tabla Therapy Type
+    #=====================================================================
+    #metodo para listar
+    api.add_resource(TherapyTypeGet, '/security/TherapyType/list')
+    #metodo para crear
+    api.add_resource(TherapyTypeCreate, '/security/TherapyType/create')
+    #metodo para actualizar
+    api.add_resource(TherapyTypeUpdate, '/security/TherapyType/update')
+    #metodo para Eliminar Logicamente
+    api.add_resource(TherapyTypeDelete, '/security/TherapyType/delete')
