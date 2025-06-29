@@ -2,11 +2,14 @@ from ...utils.database.connection_db import DataBaseHandle
 from ...utils.general.logs import HandleLogs
 from ...utils.general.response import internal_response
 from decimal import Decimal
+from datetime import datetime
 
-
+#====================================================================
+#PERSON GENRE
+#====================================================================
 class PersonGenreComponent:
     @staticmethod
-    def getAllGenres():
+    def getAll():
         try:
             result = False
             data = None
@@ -28,7 +31,34 @@ class PersonGenreComponent:
             message = err.__str__()
         finally:
             return internal_response(result, data, message)
+        
+#====================================================================
+#PERSON_MARITAL_STATUS
+#====================================================================
+class MaritalStatusComponent:
+    @staticmethod
+    def getAll():
+        try:
+            result = False
+            data = None
+            message = None
+            sql = """
+                SELECT ams.id, ams.status_name, ams.state
+                FROM ceragen.admin_marital_status ams
+            """
 
+            resultado = DataBaseHandle.getRecords(sql,0)
+            print("Resultado de la consulta: ", resultado['data'])
+            if resultado['result']:
+                result = True
+                data = resultado['data']
+            else:
+                message = 'Error al Obtener datos de usuarios -> ' + resultado['message']
+        except Exception as err:
+            HandleLogs.write_error(err)
+            message = err.__str__()
+        finally:
+            return internal_response(result, data, message)
 #====================================================================
 #PERSON
 #====================================================================
@@ -41,13 +71,24 @@ class PersonComponent:
             message = None
 
             sql = """
-                SELECT ap.per_id, ap.per_identification, concat(per_names, ' ', per_surnames) as nombre
+                SELECT ap.per_id, ap.per_identification, concat(per_names, ' ', per_surnames) as nombre, per_genre_id,
+                per_marital_status_id,
+                per_country,
+                per_city,
+                per_address,
+                per_phone,
+                per_mail,
+                per_birth_date
                 FROM ceragen.admin_person ap
             """
 
             resultado = DataBaseHandle.getRecords(sql,0)
             print("Resultado de la consulta: ", resultado['data'])
             if resultado['result']:
+                # Convierte per_birth_date a string si es datetime
+                for row in resultado['data']:
+                    if isinstance(row.get('per_birth_date'), datetime):
+                        row['per_birth_date'] = row['per_birth_date'].strftime('%Y-%m-%d')
                 result = True
                 data = resultado['data']
             else:
@@ -554,16 +595,33 @@ class UserRolComponent:
             message = None
 
             sql = """
-                SELECT sur.id_user_rol, concat(ap.per_names, ' ', ap.per_surnames) as nombre, sur.id_user, sur.id_rol, sr.rol_name, sur.state
+                SELECT sur.id_user_rol, sur.id_user,su.user_person_id, ap.per_names, ap.per_surnames,
+                ap.per_genre_id,
+                apg.genre_name,
+                ap.per_marital_status_id,
+                ams.status_name,
+                ap.per_country,
+                ap.per_city,
+                ap.per_address,
+                ap.per_phone,
+                ap.per_mail,
+                ap.per_birth_date,
+                sur.id_rol, sr.rol_name, sur.state
                 FROM ceragen.segu_user_rol sur
                 left join ceragen.segu_user su on sur.id_user = su.user_id
                 left join ceragen.admin_person ap on su.user_person_id = ap.per_id
-                left join ceragen.segu_rol sr on sur.id_rol = sr.rol_id;
+                left join ceragen.segu_rol sr on sur.id_rol = sr.rol_id
+                left join ceragen.admin_person_genre apg on ap.per_genre_id = apg.id
+                left join ceragen.admin_marital_status ams on ap.per_marital_status_id = ams.id;
             """
 
             resultado = DataBaseHandle.getRecords(sql,0)
             print("Resultado de la consulta: ", resultado['data'])
             if resultado['result']:
+                # Convierte per_birth_date a string si es datetime
+                for row in resultado['data']:
+                    if isinstance(row.get('per_birth_date'), datetime):
+                        row['per_birth_date'] = row['per_birth_date'].strftime('%Y-%m-%d')
                 result = True
                 data = resultado['data']
             else:
@@ -649,7 +707,7 @@ class Custom1Component:
             message = None
 
             sql = """
-                SELECT sur.id_user_rol, concat(ap.per_names, ' ', ap.per_surnames) as nombre, sur.id_user, sur.id_rol, sr.rol_name, sur.state
+                SELECT sur.id_user_rol, su.user_person_id, concat(ap.per_names, ' ', ap.per_surnames) as nombre, sur.id_user, sur.id_rol, sr.rol_name, sur.state
                 FROM ceragen.segu_user_rol sur
                 left join ceragen.segu_user su on sur.id_user = su.user_id
                 left join ceragen.admin_person ap on su.user_person_id = ap.per_id
