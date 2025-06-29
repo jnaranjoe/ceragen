@@ -4,11 +4,18 @@ def load_routes(api):
     #metodo para el login
     api.add_resource(LoginService, '/security/login')
     
-    
+    #===================================================================
+    #PERSONGENRE
+    #===================================================================
     #metodo para listar los generos de las personas
-    api.add_resource(PersonGenre, '/security/PersonGenre/list')
-    
-    
+    api.add_resource(PersonGenreGet, '/security/PersonGenre/list')
+
+    #===================================================================
+    #PERSONMARITALSTATUS
+    #===================================================================
+    #metodo para listar los generos de las personas
+    api.add_resource(MaritalStatusGet, '/security/MaritalStatus/list')
+
     #===================================================================
     #PERSON
     #===================================================================
@@ -64,6 +71,8 @@ def load_routes(api):
     #===================================================================
     #Custom
     #===================================================================
+    #metodo para listar
+    # api.add_resource(UserRolGet, '/security/UserRol/list')
     #metodo para crear Persona, User, Rol y su tabla de (paciente, cliente, medico)
     api.add_resource(Custom1Create, '/security/custom1/create')
 

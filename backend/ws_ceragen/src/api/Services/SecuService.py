@@ -9,7 +9,10 @@ from ...utils.smpt.smpt_officeUG import send_password_recovery_email
 from ..Components.TokenComponent import TokenComponent
 from flask import request
 
-class PersonGenre(Resource):
+#=====================================================================
+#Tabla PersonGenre
+#=====================================================================
+class PersonGenreGet(Resource):
     @staticmethod
     def get():
         try:
@@ -19,7 +22,7 @@ class PersonGenre(Resource):
             # if not JwtComponent.token_validate(token):
             #     return response_unauthorize()
 
-            resultado = PersonGenreComponent.getAllGenres()
+            resultado = PersonGenreComponent.getAll()
             # print("Resultado de la consulta: ", resultado)
             if resultado['result']:
                 if resultado['data'].__len__() > 0:
@@ -34,6 +37,34 @@ class PersonGenre(Resource):
             HandleLogs.write_error(err)
             return response_error("Error en el método: " + err.__str__())
 
+#=====================================================================
+#Tabla PersonMaritalStatus
+#=====================================================================
+class MaritalStatusGet(Resource):
+    @staticmethod
+    def get():
+        try:
+            HandleLogs.write_log("Ejecutando servicio de Listar Usuario")
+            # #Validar que el token sea correcto
+            # token = request.headers['tokenapp']
+            # if not JwtComponent.token_validate(token):
+            #     return response_unauthorize()
+
+            resultado = MaritalStatusComponent.getAll()
+            # print("Resultado de la consulta: ", resultado)
+            if resultado['result']:
+                if resultado['data'].__len__() > 0:
+                    return response_success(resultado['data'])
+                else:
+                    return response_not_found()
+            else:
+                return response_error(resultado['message'])
+            # return response_success(resultado['data'])
+
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error("Error en el método: " + err.__str__())
+        
 #====================================================================
 # PERSON   
 #====================================================================   
