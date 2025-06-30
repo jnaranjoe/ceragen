@@ -961,7 +961,14 @@ class MedicalStaffComponent:
         result, data, message = False, None, None
         try:
             sql = """
-                SELECT med_id, med_person_id, concat(ap.per_names, ' ', ap.per_surnames) as nombreMedico, med_type_id, ampt.mpt_name, med_specialty, med_state
+                SELECT med_id,
+                med_person_id,
+                ap.per_names,
+                ap.per_surnames,
+                med_type_id,
+                ampt.mpt_name,
+                med_specialty,
+                med_state
                 FROM ceragen.admin_medical_staff ams
 				left join ceragen.admin_person ap on ams.med_person_id = ap.per_id
 				left join ceragen.admin_medic_person_type ampt on ams.med_type_id = ampt.mpt_id
@@ -1053,10 +1060,19 @@ class PatientComponent:
         result, data, message = False, None, None
         try:
             sql = """
-                SELECT pat_id, pat_person_id, pat_medical_conditions, pat_allergies,
-                       pat_blood_type, pat_emergency_contact_name,
-                       pat_emergency_contact_phone, pat_state
+                SELECT pat_id,
+                pat_person_id,
+                ap.per_identification,
+                ap.per_names,
+                ap.per_surnames,
+                pat_medical_conditions,
+                pat_allergies,
+                pat_blood_type,
+                pat_emergency_contact_name,
+                pat_emergency_contact_phone,
+                pat_state
                 FROM ceragen.admin_patient
+                left join ceragen.admin_person ap on admin_patient.pat_person_id = ap.per_id
             """
             resultado = DataBaseHandle.getRecords(sql, 0)
             if resultado['result']:
