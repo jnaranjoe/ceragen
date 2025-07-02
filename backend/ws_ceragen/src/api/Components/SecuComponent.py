@@ -25,7 +25,7 @@ class PersonGenreComponent:
                 result = True
                 data = resultado['data']
             else:
-                message = 'Error al Obtener datos de usuarios -> ' + resultado['message']
+                message = 'Error al Obtener datos -> ' + resultado['message']
         except Exception as err:
             HandleLogs.write_error(err)
             message = err.__str__()
@@ -53,7 +53,35 @@ class MaritalStatusComponent:
                 result = True
                 data = resultado['data']
             else:
-                message = 'Error al Obtener datos de usuarios -> ' + resultado['message']
+                message = 'Error al Obtener datos -> ' + resultado['message']
+        except Exception as err:
+            HandleLogs.write_error(err)
+            message = err.__str__()
+        finally:
+            return internal_response(result, data, message)
+
+#====================================================================
+#PATIENT_BLOOD_TYPE
+#====================================================================
+class BloodTypeComponent:
+    @staticmethod
+    def getAll():
+        try:
+            result = False
+            data = None
+            message = None
+            sql = """
+                SELECT btp_id, btp_type
+	            FROM ceragen.clinic_blood_type where btp_state = true;
+            """
+
+            resultado = DataBaseHandle.getRecords(sql,0)
+            print("Resultado de la consulta: ", resultado['data'])
+            if resultado['result']:
+                result = True
+                data = resultado['data']
+            else:
+                message = 'Error al Obtener datos -> ' + resultado['message']
         except Exception as err:
             HandleLogs.write_error(err)
             message = err.__str__()
@@ -595,7 +623,12 @@ class UserRolComponent:
             message = None
 
             sql = """
-                SELECT sur.id_user_rol, sur.id_user,su.user_person_id, ap.per_names, ap.per_surnames,
+                SELECT sur.id_user_rol,
+                sur.id_user,
+                su.user_person_id,
+                ap.per_identification,
+                ap.per_names,
+                ap.per_surnames,
                 ap.per_genre_id,
                 apg.genre_name,
                 ap.per_marital_status_id,
@@ -616,7 +649,7 @@ class UserRolComponent:
             """
 
             resultado = DataBaseHandle.getRecords(sql,0)
-            print("Resultado de la consulta: ", resultado['data'])
+            # print("Resultado de la consulta: ", resultado['data'])
             if resultado['result']:
                 # Convierte per_birth_date a string si es datetime
                 for row in resultado['data']:
@@ -666,7 +699,34 @@ class UserRolComponent:
 
         finally:
             return internal_response(result, data, message)
-        
+    
+    @staticmethod
+    def update(datos):
+        result = False
+        data = None
+        message = None
+        try:
+            sql = """
+                UPDATE ceragen.segu_user_rol SET
+                    id_rol = %s
+                WHERE id_user_rol = %s
+            """
+            record = (
+                datos['id_user_rol'],
+                datos['id_rol'],
+            )
+            data_NonQuery = DataBaseHandle.ExecuteNonQuery(sql, record)
+            if data_NonQuery['result']:
+                result = True
+                data = data_NonQuery['data']
+            else:
+                message = "Error al actualizar: " + data_NonQuery['message']
+        except Exception as err:
+            message = "Error al actualizar: " + err.__str__()
+            HandleLogs.write_error(message)
+        finally:
+            return internal_response(result, data, message)
+
     @staticmethod
     def logicDelete(datos):
         result = False
