@@ -7,7 +7,9 @@ from ...utils.general.response import response_error, response_success, response
 # from ..Components.jwt_component import JwtComponent
 from ...utils.smpt.smpt_officeUG import send_password_recovery_email
 from ..Components.TokenComponent import TokenComponent
-from flask import request
+from flask import request, make_response
+from ...utils.pdf.generate_pdf import generate_invoice_pdf
+from ...utils.smpt.smpt_officeUG import send_email_with_attachment
 
 #=====================================================================
 #Tabla PersonGenre
@@ -624,6 +626,9 @@ class UserRolLogicDelete(Resource):
             HandleLogs.write_error(err)
             return response_error("Error en el método: " + err.__str__())
         
+#====================================================================
+# LOGIN 
+#====================================================================        
 class LoginService(Resource):
     @staticmethod
     def post():
@@ -659,6 +664,9 @@ class LoginService(Resource):
             HandleLogs.write_error(error_msg)
             return response_error(error_msg)
 
+#====================================================================
+# RECOVERY AND UPDATE PASSWORD
+#====================================================================  
 class PasswordRecovery(Resource):
     @staticmethod
     def patch():
@@ -721,7 +729,6 @@ class EmailPasswordUpdate(Resource):
             error_msg = f"Error inesperado en el servicio: {err.__str__()}"
             HandleLogs.write_error(error_msg)
             return response_error(error_msg)
-
 
 #=====================================================================
 #SERVICIO CUSTOM 1
@@ -1550,3 +1557,514 @@ class TherapyTypeDelete(Resource):
         except Exception as err:
             HandleLogs.write_error(err)
             return response_error("Error en el método: " + err.__str__())
+
+#=====================================================================
+# INVOICE SERVICE
+#=====================================================================
+class InvoiceCreate(Resource):
+    def post(self):
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+
+            current_user_obj = TokenComponent.User(token)
+            if current_user_obj and 'user_mail' in current_user_obj:
+                current_user_email = current_user_obj['user_mail']
+            else:
+                return response_error("No se pudo identificar el email del usuario desde el token.")
+
+            HandleLogs.write_log(f"Usuario '{current_user_email}' ejecutando servicio para Crear Factura")
+            
+            rq_json = request.get_json()
+            new_request = InvoiceReq()
+            error_en_validacion = new_request.validate(rq_json)
+            if error_en_validacion:
+                message = f"Error al validar el request -> {error_en_validacion}"
+                HandleLogs.write_error(message)
+                return response_error(message)
+
+            resultado = InvoiceComponent.create(rq_json, current_user_email)
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
+
+class InvoiceList(Resource):
+    def get(self):
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+            
+            HandleLogs.write_log("Ejecutando servicio para Listar todas las Facturas")
+            resultado = InvoiceComponent.get_all()
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
+
+class InvoiceGetById(Resource):
+    def get(self): 
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+
+            invoice_id = request.args.get('id')
+
+            # --- Validación ---
+            if not invoice_id:
+                return response_error("El parámetro 'id' es requerido en la consulta.")
+
+            HandleLogs.write_log(f"Ejecutando servicio para obtener Factura ID: {invoice_id}")
+            resultado = InvoiceComponent.get_by_id(invoice_id)
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
+
+class InvoiceUpdateState(Resource):
+    def put(self):
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+
+            current_user_obj = TokenComponent.User(token)
+            if current_user_obj and 'user_mail' in current_user_obj:
+                current_user_email = current_user_obj['user_mail']
+            else:
+                return response_error("No se pudo identificar el email del usuario desde el token.")
+
+            HandleLogs.write_log(f"Usuario '{current_user_email}' ejecutando servicio para anular factura.")
+            
+            rq_json = request.get_json()
+            new_request = InvoiceStateReq()
+            error_en_validacion = new_request.validate(rq_json)
+            if error_en_validacion:
+                message = f"Error al validar el request -> {error_en_validacion}"
+                HandleLogs.write_error(message)
+                return response_error(message)
+
+            resultado = InvoiceComponent.update_state(rq_json, current_user_email)
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
+
+#=====================================================================
+# PAYMENT METHOD LIST SERVICE
+#=====================================================================
+class PaymentMethodList(Resource):
+    def get(self):
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+
+            HandleLogs.write_log("Ejecutando servicio para listar formas de pago.")
+            resultado = PaymentMethodComponent.get_all()
+            
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
+
+#=====================================================================
+# DASHBOARD SERVICE
+#=====================================================================
+class DashboardTodaySales(Resource):
+    def get(self):
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+
+            HandleLogs.write_log(f"Ejecutando servicio de dashboard: Ventas del día.")
+            resultado = InvoiceComponent.get_sales_for_today()
+            
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
+
+class DashboardWeeklySalesByDay(Resource):
+    def get(self):
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+
+            HandleLogs.write_log(f"Ejecutando servicio de dashboard: Desglose de ventas semanales.")
+            resultado = InvoiceComponent.get_weekly_sales_by_day()
+            
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
+
+#=====================================================================
+#Tabla Pagos y Abonos
+#=====================================================================
+class PaymentCreate(Resource):
+    @staticmethod
+    def post():
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+
+            # 1. Obtenemos el objeto de usuario (diccionario) del token
+            current_user_obj = TokenComponent.User(token)
+            
+            # 2. Extraemos solo el email del diccionario
+            #    Esto evita pasar el diccionario completo a la base de datos
+            if current_user_obj and 'user_mail' in current_user_obj:
+                current_user_email = current_user_obj['user_mail']
+            else:
+                return response_error("No se pudo identificar el email del usuario desde el token.")
+
+            HandleLogs.write_log(f"Usuario '{current_user_email}' ejecutando servicio para Crear Pago/Abono")
+            rq_json = request.get_json()
+            new_request = PaymentReq()
+            error_en_validacion = new_request.validate(rq_json)
+            if error_en_validacion:
+                message = f"Error al validar el request -> {error_en_validacion}"
+                HandleLogs.write_error(message)
+                return response_error(message)
+
+            # 3. Pasamos únicamente el email (string) al componente
+            resultado = PaymentComponent.create(rq_json, current_user_email)
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
+
+class PaymentGetByInvoiceId(Resource):
+    def get(self):
+        try:
+            # Se obtiene el invoice_id desde los query params
+            invoice_id = request.args.get('invoice_id')
+
+            if not invoice_id:
+                return response_error("El parámetro 'invoice_id' es requerido en la consulta.")
+
+            HandleLogs.write_log(f"Ejecutando servicio para Listar Pagos de Factura ID: {invoice_id}")
+            resultado = PaymentComponent.get_by_invoice_id(invoice_id)
+            
+            if resultado['result']:
+                # Devuelve éxito incluso si la lista de datos está vacía
+                if resultado['data'] is not None:
+                    return response_success(resultado['data'])
+                else:
+                    return response_not_found()
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
+
+class PaymentUpdate(Resource):
+    @staticmethod
+    def put():
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+
+            current_user_obj = TokenComponent.User(token)
+            if current_user_obj and 'user_mail' in current_user_obj:
+                current_user_email = current_user_obj['user_mail']
+            else:
+                return response_error("No se pudo identificar el email del usuario desde el token.")
+
+            HandleLogs.write_log(f"Usuario '{current_user_email}' ejecutando servicio para Actualizar Pago/Abono")
+            rq_json = request.get_json()
+            new_request = PaymentIdReq()
+            error_en_validacion = new_request.validate(rq_json)
+            if error_en_validacion:
+                message = f"Error al validar el request -> {error_en_validacion}"
+                HandleLogs.write_error(message)
+                return response_error(message)
+
+            resultado = PaymentComponent.update(rq_json, current_user_email)
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
+
+class PaymentDelete(Resource):
+    @staticmethod
+    def put():
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+
+            current_user_obj = TokenComponent.User(token)
+            if current_user_obj and 'user_mail' in current_user_obj:
+                current_user_email = current_user_obj['user_mail']
+            else:
+                return response_error("No se pudo identificar el email del usuario desde el token.")
+                
+            HandleLogs.write_log(f"Usuario '{current_user_email}' ejecutando servicio para Eliminar Lógicamente Pago/Abono")
+            rq_json = request.get_json()
+            new_request = PaymentDeleteReq()
+            error_en_validacion = new_request.validate(rq_json)
+            if error_en_validacion:
+                message = f"Error al validar el request -> {error_en_validacion}"
+                HandleLogs.write_error(message)
+                return response_error(message)
+
+            resultado = PaymentComponent.logicDelete(rq_json, current_user_email)
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
+
+#=====================================================================
+# PATIENT AVAILABLE SESSIONS SERVICE
+#=====================================================================
+class PatientAvailableSessions(Resource):
+    def get(self):
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+
+            patient_id = request.args.get('patient_id')
+            if not patient_id:
+                return response_error("El parámetro 'patient_id' es requerido.")
+
+            HandleLogs.write_log(f"Consultando sesiones disponibles para el paciente ID: {patient_id}")
+            resultado = SchedulingComponent.get_available_sessions_for_patient(patient_id)
+            
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}") 
+
+#=====================================================================
+# SCHEDULE SESSION SERVICE
+#=====================================================================
+class ScheduleSession(Resource):
+    def put(self): # Usamos PUT porque estamos actualizando un recurso existente (la sesión)
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+            
+            current_user_obj = TokenComponent.User(token)
+            if current_user_obj and 'user_mail' in current_user_obj:
+                current_user_email = current_user_obj['user_mail']
+            else:
+                return response_error("No se pudo identificar al email del usuario desde el token.")
+
+            rq_json = request.get_json()
+            new_request = ScheduleSessionReq()
+            errors = new_request.validate(rq_json)
+            if errors:
+                return response_error(f"Error de validación: {errors}")
+            
+            HandleLogs.write_log(f"Agendando sesión ID: {rq_json['session_id']}")
+            resultado = SchedulingComponent.schedule_session(rq_json, current_user_email)
+            
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                # Si el error es una validación de negocio (ej. horario), no es un error 500
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
+        
+
+class WeeklyScheduledSessions(Resource):
+    def get(self):
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+
+            HandleLogs.write_log(f"Ejecutando servicio para consultar agenda de la semana.")
+            resultado = SchedulingComponent.get_scheduled_sessions_for_week()
+            
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
+
+class UpdateScheduledSession(Resource):
+    def put(self):
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+            
+            current_user_obj = TokenComponent.User(token)
+            if current_user_obj and 'user_mail' in current_user_obj:
+                current_user_email = current_user_obj['user_mail']
+            else:
+                return response_error("No se pudo identificar el email del usuario desde el token.")
+
+            rq_json = request.get_json()
+            new_request = UpdateScheduledSessionReq()
+            errors = new_request.validate(rq_json)
+            if errors:
+                return response_error(f"Error de validación: {errors}")
+            
+            HandleLogs.write_log(f"Actualizando cita para la sesión ID: {rq_json['session_id']}")
+            resultado = SchedulingComponent.update_scheduled_session(rq_json, current_user_email)
+            
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
+
+class ConsumeSession(Resource):
+    def put(self):
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+            
+            current_user_obj = TokenComponent.User(token)
+            if current_user_obj and 'user_mail' in current_user_obj:
+                current_user_email = current_user_obj['user_mail']
+            else:
+                return response_error("No se pudo identificar el email del usuario desde el token.")
+
+            rq_json = request.get_json()
+            new_request = ConsumeSessionReq()
+            errors = new_request.validate(rq_json)
+            if errors:
+                return response_error(f"Error de validación: {errors}")
+            
+            HandleLogs.write_log(f"Consumiendo sesión ID: {rq_json['session_id']}")
+            resultado = SchedulingComponent.consume_session(rq_json['session_id'], current_user_email)
+            
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
+
+class AllScheduledSessions(Resource):
+    def get(self):
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+
+            HandleLogs.write_log(f"Ejecutando servicio para consultar todas las citas agendadas.")
+            resultado = SchedulingComponent.get_all_scheduled_sessions()
+            
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
+
+#=====================================================================
+# PDF GENERATION SERVICE
+#=====================================================================
+class InvoicePDFService(Resource):
+    def get(self):
+        try:
+            # --- TOKEN ---
+            # token = request.headers.get('token')
+            # if not token or not TokenComponent.Token_Validate(token):
+            #     return response_unauthorize()
+
+            invoice_id = request.args.get('id')
+            if not invoice_id:
+                return response_error("El parámetro 'id' de la factura es requerido.")
+
+            # 1. Obtener los datos completos de la factura
+            invoice_data_result = InvoiceComponent.get_by_id(invoice_id)
+            if not invoice_data_result['result']:
+                return response_error(invoice_data_result['message'])
+            
+            # 2. Generar el PDF con los datos obtenidos
+            pdf_buffer = generate_invoice_pdf(invoice_data_result['data'])
+            
+            # 3. Preparar la respuesta para que sea un archivo descargable
+            response = make_response(pdf_buffer.read())
+            response.headers['Content-Type'] = 'application/pdf'
+            response.headers['Content-Disposition'] = f'inline; filename=factura_{invoice_id}.pdf'
+            
+            return response
+
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error al generar el PDF: {err}")
+
+#=====================================================================
+# SEND INVOICE EMAIL SERVICE
+#=====================================================================
+class InvoiceEmailService(Resource):
+    def post(self):
+        try:
+            token = request.headers.get('token')
+            if not token or not TokenComponent.Token_Validate(token):
+                return response_unauthorize()
+            
+            rq_json = request.get_json()
+            invoice_id = rq_json.get('invoice_id')
+            if not invoice_id:
+                return response_error("El 'invoice_id' es requerido.")
+
+            HandleLogs.write_log(f"Enviando factura ID {invoice_id} por correo.")
+            resultado = InvoiceComponent.send_invoice_by_email(invoice_id)
+            
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error(f"Error en el método: {err}")
