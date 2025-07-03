@@ -7,7 +7,15 @@ from src.utils.general.logs import HandleLogs
 from src.api.Routes.api_routes import load_routes
 
 app = Flask(__name__)
-CORS(app)
+allowed_origins = [
+    "*", # El comodín es útil si la IP cambia
+    "http://localhost:5173", # Para tu desarrollo local
+    "http://100.83.120.45" # La IP de Tailscale de tu máquina frontend
+]
+
+# Configuración de CORS con una lista de orígenes permitidos
+CORS(app, resources={r"/*": {"origins": allowed_origins, "supports_credentials": True}})
+
 api = Api(app)
 load_routes(api)
 
