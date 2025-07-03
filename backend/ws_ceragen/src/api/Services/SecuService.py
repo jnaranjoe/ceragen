@@ -68,6 +68,34 @@ class MaritalStatusGet(Resource):
             return response_error("Error en el método: " + err.__str__())
         
 #====================================================================
+#PATIENT_BLOOD_TYPE
+#====================================================================
+class BloodTypeGet(Resource):
+    @staticmethod
+    def get():
+        try:
+            HandleLogs.write_log("Ejecutando servicio de Listar Usuario")
+            # #Validar que el token sea correcto
+            # token = request.headers['tokenapp']
+            # if not JwtComponent.token_validate(token):
+            #   return response_unauthorize()
+
+            resultado = BloodTypeComponent.getAll()
+            # print("Resultado de la consulta: ", resultado)
+            if resultado['result']:
+                if resultado['data'].__len__() > 0:
+                    return response_success(resultado['data'])
+                else:
+                    return response_not_found()
+            else:
+                return response_error(resultado['message'])
+            # return response_success(resultado['data'])
+
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error("Error en el método: " + err.__str__())
+        
+#====================================================================
 # PERSON   
 #====================================================================   
 class PersonGet(Resource):
@@ -520,6 +548,41 @@ class UserRolCreate(Resource):
                 'id_rol':rq_json['id_rol'],
             }
             resultado = UserRolComponent.create(payload)
+
+            if resultado['result']:
+                return response_success(resultado['data'])
+            else:
+                return response_error(resultado['message'])
+
+        except Exception as err:
+            HandleLogs.write_error(err)
+            return response_error("Error en el método: " + err.__str__())
+
+class UserRolUpdate(Resource):
+    @staticmethod
+    def put():
+        try:
+            HandleLogs.write_log("Ejecutando servicio de Crear")
+            # Obtener el request
+            rq_json = request.get_json()
+
+            print("Datos del request: ", rq_json)
+            # Validar ese request sea compatible con el modelo
+            new_request = UserRolIdReq() 
+            error_en_validacion = new_request.validate(rq_json)
+            if error_en_validacion:
+                message = "Error al validar el request -> " + str(error_en_validacion)
+                HandleLogs.write_error(message)
+                return response_error(message)
+            
+            payload = {
+                'user_id':rq_json['user_id'],
+                'user_person_id':rq_json['user_person_id'],
+                'user_mail':rq_json['user_mail'],
+                'user_password':rq_json['user_password'],
+                'user_locked':rq_json['user_locked']
+            }
+            resultado = UserRolComponent.update(payload)
 
             if resultado['result']:
                 return response_success(resultado['data'])

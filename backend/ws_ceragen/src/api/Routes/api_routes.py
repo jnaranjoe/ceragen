@@ -15,6 +15,12 @@ def load_routes(api):
     #===================================================================
     #metodo para listar los generos de las personas
     api.add_resource(MaritalStatusGet, '/security/MaritalStatus/list')
+    
+    #===================================================================
+    #PERSON_BlOOD_TYPE
+    #===================================================================
+    #metodo para listar los generos de las personas
+    api.add_resource(BloodTypeGet, '/security/BloodType/list')
 
     #===================================================================
     #PERSON
@@ -64,7 +70,7 @@ def load_routes(api):
     #metodo para crear
     api.add_resource(UserRolCreate, '/security/UserRol/create')
     #metodo para actualizar
-    # api.add_resource(RolUpdate, '/security/UserRol/update')
+    api.add_resource(UserRolUpdate, '/security/UserRol/update')
     #metodo para Eliminar Logicamente
     api.add_resource(UserRolLogicDelete, '/security/UserRol/delete')
     
