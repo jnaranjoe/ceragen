@@ -59,7 +59,7 @@ def load_routes(api):
     api.add_resource(UserLogicDelete, '/security/User/delete')
     #metodo para recuperacion de contraseña
     api.add_resource(PasswordRecovery, '/security/recover-password')
-    # Metodo para actualizar la contraseña desde el correo
+    #metodo para actualizar la contraseña desde el correo
     api.add_resource(EmailPasswordUpdate, '/security/change-password')
 
     #===================================================================
@@ -153,3 +153,57 @@ def load_routes(api):
     api.add_resource(TherapyTypeUpdate, '/security/TherapyType/update')
     #metodo para Eliminar Logicamente
     api.add_resource(TherapyTypeDelete, '/security/TherapyType/delete')
+
+    #=====================================================================
+    #Tabla Factura, Pagos y Abonos
+    #=====================================================================
+    #metodo para generar factura
+    api.add_resource(InvoiceCreate, '/finance/invoice/create')
+    #metodo para listar las facturas
+    api.add_resource(InvoiceList, '/finance/invoices') 
+    #metodo para listar por id
+    api.add_resource(InvoiceGetById, '/finance/invoice')
+    #metodo para anular factura
+    api.add_resource(InvoiceUpdateState, '/finance/invoice/update-state')
+    #metodo para listar formas de pago
+    api.add_resource(PaymentMethodList, '/finance/payment-methods')
+    #metodo para crear pago
+    api.add_resource(PaymentCreate, '/finance/payment/create')
+    #metodo para listar por factura
+    api.add_resource(PaymentGetByInvoiceId, '/finance/invoice/payments')
+    #metodo para actualizar
+    api.add_resource(PaymentUpdate, '/finance/payment/update')
+    #metodo para eliminar logicamente
+    api.add_resource(PaymentDelete, '/finance/payment/delete')
+    #metodo para enviar correo de la factura
+    api.add_resource(InvoiceEmailService, '/finance/invoice/send-email')
+
+    #=====================================================================
+    # Dashboard
+    #=====================================================================
+    #metodo para obtener las ventas del dia
+    api.add_resource(DashboardTodaySales, '/finance/dashboard/today-sales') 
+    #metodo para obtener las ventas por semana
+    api.add_resource(DashboardWeeklySalesByDay, '/finance/dashboard/weekly-sales-by-day')   
+
+    #=====================================================================
+    # AGENDAR TERAPIAS
+    #=====================================================================
+    #metodo para consultar las sesiones disponibles de un paciente
+    api.add_resource(PatientAvailableSessions, '/scheduling/patient-sessions')
+    #metodo para agendar una sesion de terapia
+    api.add_resource(ScheduleSession, '/scheduling/schedule-session')
+    #metodo para consultar las sesiones agendadas de un paciente
+    api.add_resource(WeeklyScheduledSessions, '/scheduling/weekly-appointments')
+    #metodo para actualizar una sesion agendada
+    api.add_resource(UpdateScheduledSession, '/scheduling/update-appointment')
+    #metodo para consumir una sesion agendada
+    api.add_resource(ConsumeSession, '/scheduling/consume-session')
+    #metodo para consultar todas las sesiones agendadas
+    api.add_resource(AllScheduledSessions, '/scheduling/all-appointments')
+
+    #=====================================================================
+    # Generar PDF
+    #=====================================================================
+    #metodo para generar PDF de la factura
+    api.add_resource(InvoicePDFService, '/finance/invoice/pdf')

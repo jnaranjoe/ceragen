@@ -222,3 +222,54 @@ class TherapyTypeIdReq(Schema):
 class TherapyTypeDeleteReq(Schema):
     tht_id = fields.Integer(required=True)
     tht_state = fields.Boolean(required=True)
+
+#=====================================================================
+# INVOICE (FACTURACIÓN)
+#=====================================================================
+class InvoiceDetailReq(Schema):
+    ind_product_id = fields.Integer(required=True)
+    ind_quantity = fields.Integer(required=True)
+    ind_unit_price = fields.Decimal(required=True)
+class InvoiceReq(Schema):
+    inv_client_id = fields.Integer(required=True)
+    inv_patient_id = fields.Integer(required=False) # Opcional
+    inv_discount = fields.Decimal(required=False, missing=0.0)
+    details = fields.List(fields.Nested(InvoiceDetailReq), required=True)
+class InvoiceStateReq(Schema):
+    inv_id = fields.Integer(required=True)
+    inv_state = fields.Boolean(required=True)
+
+#=====================================================================
+#Tabla Pagos y Abonos
+#=====================================================================
+class PaymentReq(Schema):
+    inp_invoice_id = fields.Integer(required=True)
+    inp_payment_method_id = fields.Integer(required=True)
+    inp_amount = fields.Decimal(required=True)
+    inp_reference = fields.String(required=False)
+    inp_proof_image_path = fields.String(required=False)
+class PaymentIdReq(Schema):
+    inp_id = fields.Integer(required=True)
+    inp_invoice_id = fields.Integer(required=True)
+    inp_payment_method_id = fields.Integer(required=True)
+    inp_amount = fields.Decimal(required=True)
+    inp_reference = fields.String(required=False)
+    inp_proof_image_path = fields.String(required=False)
+class PaymentDeleteReq(Schema):
+    inp_id = fields.Integer(required=True)
+    inp_state = fields.Boolean(required=True)
+
+#=====================================================================
+#Tabla clinic_session_control
+#=====================================================================
+class ScheduleSessionReq(Schema):
+    session_id = fields.Integer(required=True)
+    therapist_id = fields.Integer(required=True)
+    scheduled_datetime = fields.DateTime(required=True) # Espera un formato como "YYYY-MM-DDTHH:MM:SS"
+class UpdateScheduledSessionReq(Schema):
+    session_id = fields.Integer(required=True)
+    therapist_id = fields.Integer(required=True)
+    scheduled_datetime = fields.DateTime(required=True)
+class ConsumeSessionReq(Schema):
+    session_id = fields.Integer(required=True)
+       

@@ -7,6 +7,7 @@ from email.mime.multipart import MIMEMultipart
 from ..general.logs import HandleLogs
 from ...api.Components.TokenComponent import TokenComponent
 from ..general.config import Config_SMPT
+from email.mime.application import MIMEApplication
 
 
 def get_email_template(reset_password_url):
@@ -52,3 +53,34 @@ def send_password_recovery_email(destinatario):
             'message': message,
             'data': data
         }
+    
+def send_email_with_attachment(destinatario, asunto, cuerpo, pdf_buffer, filename='factura.pdf'):
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = Config_SMPT.smpt_mail
+        msg['To'] = destinatario
+        msg['Subject'] = asunto
+
+        # Adjuntar el cuerpo del correo
+        msg.attach(MIMEText(cuerpo, 'html'))
+
+        # Adjuntar el archivo PDF
+        part = MIMEApplication(
+            pdf_buffer.read(),
+            Name=filename
+        )
+        part['Content-Disposition'] = f'attachment; filename="{filename}"'
+        msg.attach(part)
+
+        # Enviar el correo
+        server = smtplib.SMTP(Config_SMPT.smpt_server, Config_SMPT.smpt_port)
+        server.starttls()
+        server.login(Config_SMPT.smpt_mail, Config_SMPT.smpt_password)
+        server.send_message(msg)
+        server.quit()
+
+        return True, "Correo enviado exitosamente."
+    except Exception as err:
+        HandleLogs.write_error(err)
+        return False, str(err)    
+    

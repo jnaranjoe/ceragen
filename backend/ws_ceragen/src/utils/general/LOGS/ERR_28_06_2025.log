@@ -1,7 +1,0 @@
-10:05:56 - ERR - post - ("Error al validar el request -> {'mpt_state': ['Missing data for required field.']}",)
-10:06:44 - ERR - create - ("'mpt_state'",)
-10:10:15 - ERR - put - ("Error al validar el request -> {'mpt_state': ['Not a valid string.']}",)
-10:31:47 - ERR - ExecuteNonQuery - (SyntaxError('error de sintaxis en o cerca de «WHERE»\nLINE 5:                 WHERE med_id = 1\n                        ^\n'),)
-11:53:42 - ERR - ExecuteNonQuery - (InvalidTextRepresentation("la sintaxis de entrada no es válida para tipo boolean: «Lorem Ipsum Trauma»\nLINE 5: ...               VALUES (1, 'Lorem Ipsum Register', 'Lorem Ips...\n                                                             ^\n"),)
-15:13:31 - ERR - ExecuteNonQuery - (IndexError('tuple index out of range'),)
-15:34:48 - ERR - ExecuteNonQuery - (IndexError('tuple index out of range'),)
