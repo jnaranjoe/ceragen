@@ -42,3 +42,4 @@
 18:39:50 - ERR - put - ("Error al validar el request -> {'pat_blood_type': ['Not a valid integer.'], 'pat_person_id': ['Unknown field.'], 'per_surnames': ['Unknown field.'], 'pat_state': ['Unknown field.'], 'per_names': ['Unknown field.'], 'per_identification': ['Unknown field.']}",)
 18:42:01 - ERR - put - ("Error al validar el request -> {'pat_blood_type': ['Not a valid integer.'], 'pat_person_id': ['Unknown field.'], 'per_surnames': ['Unknown field.'], 'pat_state': ['Unknown field.'], 'per_names': ['Unknown field.'], 'per_identification': ['Unknown field.']}",)
 18:44:11 - ERR - put - ("Error al validar el request -> {'pat_blood_type': ['Not a valid integer.']}",)
+23:59:39 - ERR - Token_Validate - ('Expired Signature',)
