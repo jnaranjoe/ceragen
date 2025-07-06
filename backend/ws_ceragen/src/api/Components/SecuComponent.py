@@ -1040,11 +1040,11 @@ class MedicalStaffComponent:
                 ap.per_surnames,
                 med_type_id,
                 ampt.mpt_name,
-                med_specialty,
-                med_state
+                med_specialty
                 FROM ceragen.admin_medical_staff ams
 				left join ceragen.admin_person ap on ams.med_person_id = ap.per_id
 				left join ceragen.admin_medic_person_type ampt on ams.med_type_id = ampt.mpt_id
+                where ams.med_state = true
             """
             resultado = DataBaseHandle.getRecords(sql, 0)
             if resultado['result']:
