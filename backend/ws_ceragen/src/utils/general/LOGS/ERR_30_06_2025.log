@@ -1,3 +1,0 @@
-18:19:48 - ERR - getRecords - (UndefinedColumn('no existe la columna ap.identification\nLINE 4:                 ap.identification,\n                        ^\n'),)
-18:20:40 - ERR - getRecords - (UndefinedColumn('no existe la columna ap.identification\nLINE 4:                 ap.identification,\n                        ^\n'),)
-18:21:44 - ERR - getRecords - (UndefinedColumn('no existe la columna ap.identification\nLINE 4:                 ap.identification,\n                        ^\n'),)
