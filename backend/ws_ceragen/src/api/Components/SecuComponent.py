@@ -516,11 +516,21 @@ class UserComponent:
         data = None
         message = None
         try:
-            # 1. Buscar al usuario por su correo electrónico
+            # Se hacen JOINS para conectar las tablas de usuario, usuario_rol y rol.
             sql = """
-                SELECT user_id, user_person_id, user_mail, user_password, user_locked, user_state
-                FROM ceragen.segu_user 
-                WHERE user_mail = %s
+                SELECT 
+                    su.user_id, 
+                    su.user_person_id, 
+                    su.user_mail, 
+                    su.user_password, 
+                    su.user_locked, 
+                    su.user_state,
+                    sr.rol_name, -- Se añade el nombre del rol a la selección
+                    sr.is_admin_rol
+                FROM ceragen.segu_user su
+                LEFT JOIN ceragen.segu_user_rol sur ON su.user_id = sur.id_user
+                LEFT JOIN ceragen.segu_rol sr ON sur.id_rol = sr.rol_id
+                WHERE su.user_mail = %s;
             """
             record = (email,)
             user_data_result = DataBaseHandle.getRecords(sql, 1, record)
@@ -532,18 +542,19 @@ class UserComponent:
             user = user_data_result['data']
 
             if user['user_password'] == password:
-                # 3. Verificar si la cuenta está activa y no bloqueada
                 if not user['user_state']:
                     message = "La cuenta de usuario está inactiva."
                 elif user['user_locked']:
                     message = "La cuenta de usuario está bloqueada."
                 else:
-                    # Si todo está bien, preparamos los datos del usuario para devolverlos
+                    # Si todo está bien, preparamos los datos del usuario, AHORA CON EL ROL
                     result = True
                     data = {
                         "user_id": user['user_id'],
                         "user_person_id": user['user_person_id'],
-                        "user_mail": user['user_mail']
+                        "user_mail": user['user_mail'],
+                        "role": user['rol_name'], # Se añade el rol a los datos
+                        "is_admin": user['is_admin_rol']
                     }
                     message = "Login exitoso."
             else:
